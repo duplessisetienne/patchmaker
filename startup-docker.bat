@@ -1,0 +1,1 @@
+docker run --name patchmaker-cont -d  -p 8080:8080  --rm patchmaker
