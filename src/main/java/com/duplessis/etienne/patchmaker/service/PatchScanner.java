@@ -6,8 +6,9 @@ package com.duplessis.etienne.patchmaker.service;
 
 import com.duplessis.etienne.patchmaker.utils.PropertyManagerFactory;
 import java.io.File;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -46,7 +47,8 @@ public class PatchScanner {
 
     
 
-    private final Logger logger = LoggerFactory.getLogger(PatchScanner.class);
+
+    private static final Logger LOGGER = LogManager.getLogger(PatchScanner.class);
 
     public void listAllFiles(String path) {
 
@@ -61,12 +63,12 @@ public class PatchScanner {
         if (fileList != null) {
             for (File f : fileList) {
                 if (f.isDirectory()) {
-                    logger.info(f.getName()); 
+                    LOGGER.info(f.getName());
                     listAllFiles(f.getAbsolutePath());  
                 } else { 
                    if(f.isFile()){
-                    logger.info("parent: " + f.getParent());
-                    logger.info("filename: "+ f.getName());
+                       LOGGER.info("parent: " + f.getParent());
+                       LOGGER.info("filename: "+ f.getName());
                     }
                 }
 

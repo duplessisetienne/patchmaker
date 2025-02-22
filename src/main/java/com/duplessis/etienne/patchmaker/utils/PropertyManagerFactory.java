@@ -1,14 +1,15 @@
 package com.duplessis.etienne.patchmaker.utils;
  
+import com.duplessis.etienne.patchmaker.service.PatchScanner;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
- 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 public class PropertyManagerFactory {
-   private static final Logger LOGGER = LoggerFactory.getLogger(PropertyManagerFactory.class); 
+    private static final Logger LOGGER = LogManager.getLogger(PropertyManagerFactory.class);
     private static PropertyManagerFactory instance = null;
     private static PropertiesConfiguration properties;
 

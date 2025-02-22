@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.2.RELEASE</version>
+        <version>3.3.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.duplessis.etienne</groupId>
@@ -15,7 +15,9 @@
     <description>Demo project for Spring Boot</description>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
+        <log4j2.version>2.20.0</log4j2.version>
+        <spring-boot.version>3.3.5</spring-boot.version>
     </properties>
 
     <dependencies>
@@ -27,14 +29,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
+
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-1.2-api</artifactId>
+            <version>${log4j2.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency> 
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -61,38 +66,108 @@
             <artifactId>commons-configuration</artifactId>
             <version>1.9</version>
         </dependency>
+
+
+
+
+        <!-- Oracle JDBC and JMS Driver -->
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>21.5.0.0</version>
+        </dependency>
+
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
+
+<!--    <build>-->
+<!--        <plugins>-->
+
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>appassembler-maven-plugin</artifactId>-->
+<!--                <version>2.1.0</version>-->
+<!--                <configuration>-->
+<!--                    <repositoryLayout>flat</repositoryLayout>-->
+<!--                    <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>-->
+<!--                    <useWildcardClassPath>true</useWildcardClassPath>-->
+<!--                    <target>${project.build.directory}</target>-->
+<!--                    <daemons>-->
+<!--                        <daemon>-->
+<!--                            <id>patchmaker</id>-->
+<!--                            <mainClass>com.duplessis.etienne.patchmaker.PatchmakerApplication</mainClass>-->
+<!--                            <commandLineArguments>-->
+<!--                                <commandLineArgument>start</commandLineArgument>-->
+<!--                            </commandLineArguments>-->
+<!--                            <platforms>-->
+<!--                                <platform>jsw</platform>-->
+<!--                            </platforms>-->
+<!--                            <generatorConfigurations>-->
+<!--                                <generatorConfiguration>-->
+<!--                                    <generator>jsw</generator>-->
+<!--                                    <includes>-->
+<!--                                        <include>linux-x86-64</include>-->
+<!--                                        <include>macosx-universal-64</include>-->
+<!--                                        <include>windows-x86-64</include>-->
+<!--                                    </includes>-->
+<!--                                    <configuration>-->
+<!--                                        <property>-->
+<!--                                            <name>configuration.directory.in.classpath.first</name>-->
+<!--                                            <value>conf</value>-->
+<!--                                        </property>-->
+<!--                                        <property>-->
+<!--                                            <name>set.default.REPO_DIR</name>-->
+<!--                                            <value>lib</value>-->
+<!--                                        </property>-->
+<!--                                        <property>-->
+<!--                                            <name>wrapper.logfile</name>-->
+<!--                                            <value>logs/wrapper.log</value>-->
+<!--                                        </property>-->
+<!--                                    </configuration>-->
+<!--                                </generatorConfiguration>-->
+<!--                            </generatorConfigurations>-->
+<!--                            <jvmSettings>-->
+<!--                                <initialMemorySize>128M</initialMemorySize>-->
+<!--                                <maxMemorySize>1024M</maxMemorySize>-->
+<!--                                <systemProperties>-->
+<!--                                    <systemProperty>java.security.policy=conf/policy.all</systemProperty>-->
+<!--                                </systemProperties>-->
+<!--                            </jvmSettings>-->
+<!--                        </daemon>-->
+<!--                    </daemons>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>generate-jsw-scripts</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>generate-daemons</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctor-maven-plugin</artifactId>
-                <version>1.5.8</version>
-                <executions>
-                    <execution>
-                        <id>generate-docs</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>process-asciidoc</goal>
-                        </goals>
-                        <configuration>
-                            <backend>html</backend>
-                            <doctype>book</doctype>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.springframework.restdocs</groupId>
-                        <artifactId>spring-restdocs-asciidoctor</artifactId>
-                        <version>${spring-restdocs.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

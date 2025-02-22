@@ -1,125 +1,157 @@
 package com.duplessis.etienne.patchmaker.service;
 
-import com.duplessis.etienne.patchmaker.controler.PatchController;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.duplessis.etienne.patchmaker.model.Patch;
 import com.duplessis.etienne.patchmaker.utils.PropertyManagerFactory;
+
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.Version;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FreeMakerConsoleEx {
 
-    private final Logger logger = LoggerFactory.getLogger(FreeMakerConsoleEx.class);
+
+    private static final Logger LOGGER = LogManager.getLogger(FreeMakerConsoleEx.class);
     private String patchNumber;
     private String patchName;
     private String patchDescription;
     private String patchVersion;
-    private ArrayList<String> procedure;
-    private ArrayList<String> function;
-    private ArrayList<String> type;
-    private ArrayList<String> apex;
-    private ArrayList<String> data;
-    private ArrayList<String> view;
-    private ArrayList<String> trigger;
-    private ArrayList<String> table;
+    private List<String> procedure;
+    private List<String> function;
+    private List<String> type;
+    private List<String> apex;
+    private List<String> data;
+    private List<String> view;
+    private List<String> trigger;
+    private List<String> table;
     private String filePath = "";
 
-    public void writeToFile(Patch patch) throws IOException, TemplateException {
+    private List<String> cleanList(List<String> inputList) {
+        if (inputList == null) return new ArrayList<>();
 
-        logger.info("Starting FreeMarker Write File");
+        // Remove trailing null or empty strings
+        while (!inputList.isEmpty() &&
+               (inputList.get(inputList.size() - 1) == null ||
+                inputList.get(inputList.size() - 1).trim().isEmpty())) {
+            inputList.remove(inputList.size() - 1);
+        }
 
-        // Properties prop = new Properties();
-        // ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        // InputStream stream = loader.getResourceAsStream("/application.properties");
-        // prop.load(stream);
-        // filePath = prop.getProperty("filepath");
+        return inputList;
+    }
+
+    public void writeToFile(Patch patch) throws IOException, TemplateException, ConfigurationException {
+
+        LOGGER.info("Starting FreeMarker Write File");
+
         try {
             this.filePath = PropertyManagerFactory.getInstance().getString("filepath");
+
+            // Ensure the directory exists
+            Path directory = Paths.get(filePath);
+            if (!Files.exists(directory)) {
+                try {
+                    Files.createDirectories(directory);
+                    LOGGER.info("Created directory: {}", directory);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to create directory: {}", directory, e);
+                    throw new IOException("Cannot create output directory", e);
+                }
+            }
+
+            // Validate file path
+            if (!Files.isWritable(directory)) {
+                LOGGER.error("Directory is not writable: {}", directory);
+                throw new IOException("Cannot write to specified directory");
+            }
+
+            patchNumber = patch.getPatchNumber();
+            patchName = patch.getPatchName();
+            patchDescription = patch.getPatchDescription();
+            patchVersion = patch.getPatchVersion();
+            procedure = patch.getProcedure();
+            function = patch.getFunction();
+            type = patch.getType();
+            apex = patch.getApex();
+            table = patch.getTable();
+            trigger = patch.getTrigger();
+            data = patch.getSql();
+            view = patch.getView();
+
+            Configuration cfg = new Configuration(new Version("2.3.23"));
+
+            cfg.setClassForTemplateLoading(FreeMakerConsoleEx.class, "/");
+
+            Template template = cfg.getTemplate("test.ftl");
+
+            Map<String, Object> templateData = new HashMap<>();
+            LOGGER.info("Setting fields");
+            if (patchName != null || patchVersion != null || patchNumber != null || patchDescription != null) {
+                templateData.put("patchname", patchName);
+                templateData.put("versioncontrol", patchVersion);
+                templateData.put("patchnumber", patchNumber);
+                templateData.put("pacthdescription", patchDescription);
+            } else {
+                LOGGER.info("Your patch requires a Name,Version, Number and Description");
+            }
+
+            // Clean up procedures list
+            List<String> cleanProcedures = cleanList(procedure);
+            templateData.put("procedures", cleanProcedures);
+
+            if (function != null) {
+                templateData.put("functions", function);
+            }
+
+            if (type != null) {
+                templateData.put("types", type);
+            }
+            if (apex != null) {
+                templateData.put("apexpages", apex);
+            }
+            if (table != null) {
+                templateData.put("tables", table);
+            }
+            if (trigger != null) {
+                templateData.put("triggers", trigger);
+            }
+            if (view != null) {
+                templateData.put("views", view);
+            }
+            if (data != null) {
+                templateData.put("datas", data);
+            }
+            LOGGER.info("All fields set");
+            LOGGER.info("Starting to Create the file");
+            LOGGER.info(filePath);
+            String fileName = Paths.get(filePath, "InstallScript_" + patch.getPatchNumber() + ".sql").toString();
+            LOGGER.info("Attempting to write file: {}", fileName);
+
+            // Use try-with-resources to ensure file is properly closed
+            try (FileWriter fileWriter = new FileWriter(fileName)) {
+                StringWriter out = new StringWriter();
+                template.process(templateData, out);
+                fileWriter.write(out.getBuffer().toString());
+                LOGGER.info("InstallScript Created successfully: {}", fileName);
+            }
         } catch (Exception e) {
-            logger.error("Couldn't load config");
-        }
-
-        patchNumber = patch.getPatchNumber();
-        patchName = patch.getPatchName();
-        patchDescription = patch.getPatchDescription();
-        patchVersion = patch.getPatchVersion();
-        procedure = patch.getProcedure();
-        function = patch.getFunction();
-        type = patch.getType();
-        apex = patch.getApex();
-        table = patch.getTable();
-        trigger = patch.getTrigger();
-        data = patch.getSql();
-        view = patch.getView();
-
-        Configuration cfg = new Configuration(new Version("2.3.23"));
-
-        cfg.setClassForTemplateLoading(FreeMakerConsoleEx.class, "/");
-
-        Template template = cfg.getTemplate("test.ftl");
-
-        Map<String, Object> templateData = new HashMap<>();
-        logger.info("Setting fields");
-        if (patchName != null || patchVersion != null || patchNumber != null || patchDescription != null) {
-            templateData.put("patchname", patchName);
-            templateData.put("versioncontrol", patchVersion);
-            templateData.put("patchnumber", patchNumber);
-            templateData.put("pacthdescription", patchDescription);
-        } else {
-            logger.info("Your patch requires a Name,Version, Number and Description");
-        }
-
-        if (procedure != null) {
-            templateData.put("procedures", procedure);
-        }
-        if (function != null) {
-            templateData.put("functions", function);
-        }
-
-        if (type != null) {
-            templateData.put("types", type);
-        }
-        if (apex != null) {
-            templateData.put("apexpages", apex);
-        }
-        if (table != null) {
-            templateData.put("tables", table);
-        }
-        if (trigger != null) {
-            templateData.put("triggers", trigger);
-        }
-        if (view != null) {
-            templateData.put("views", view);
-        }
-        if (data != null) {
-            templateData.put("datas", data);
-        }
-        logger.info("All fields set");
-        logger.info("Starting to Create the file"); 
-        logger.info(filePath);
-        String fileName = filePath + "InstallScript_" + patch.getPatchNumber() + ".sql";
-        logger.info(fileName);
-        
-        FileWriter fileWriter = new FileWriter(fileName);
-        try ( StringWriter out = new StringWriter()) {
-            template.process(templateData, out);
-            fileWriter.write(out.getBuffer().toString());
-            fileWriter.close();
-            out.flush();
-            logger.info("InstallScript Created");
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        } finally {
-            fileWriter.close();
+            LOGGER.error("Error writing install script", e);
+            throw e;
         }
     }
 
